@@ -30,7 +30,7 @@ import threading
 import OpTestConfiguration
 from common.OpTestSystem import OpSystemState
 from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestThread import OpSSHThreadLinearVar1, OpSSHThreadLinearVar2
+from common.OpTestThread import OpSSHThread
 from common.OpTestSOL import OpSOLMonitorThread
 from testcases.OpTestEM import OpTestEM
 
@@ -87,7 +87,8 @@ class RuntimeEMStress(unittest.TestCase, OpTestEM):
             cmd = "for j in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do echo %s > $j; done" % gov
             cmd_list.append(cmd)
         num = 1
-        thread = OpSSHThreadLinearVar1(num, "Thread-%s" % num, cmd_list, 2, torture_time, True)
+        thread = OpSSHThread(num, "Thread-%s" % num, cmd_list=cmd_list, sleep_time=2,
+                             execution_time=torture_time, ignore_fail=True)
         thread.start()
         self.thread_list.append(thread)
 
@@ -107,7 +108,8 @@ class RuntimeEMStress(unittest.TestCase, OpTestEM):
         log.debug(cmd_list)
 
         num = 2
-        thread = OpSSHThreadLinearVar2(num, "Thread-%s" % num, cmd_list, torture_time, True)
+        thread = OpSSHThread(num, "Thread-%s" % num, cmd_dict=cmd_list,
+                             execution_time=torture_time, ignore_fail=True)
         thread.start()
         self.thread_list.append(thread)
 
@@ -115,7 +117,8 @@ class RuntimeEMStress(unittest.TestCase, OpTestEM):
         # OCC reset reload tests
         cmd_list = {"opal-prd occ reset":60, "opal-prd --expert-mode htmgt-passthru 4":10}
         num = 3
-        thread = OpSSHThreadLinearVar2(num, "Thread-%s" % num, cmd_list, torture_time, True)
+        thread = OpSSHThread(num, "Thread-%s" % num, cmd_dict=cmd_list,
+                             execution_time=torture_time, ignore_fail=True)
         thread.start()
         self.thread_list.append(thread)
 
@@ -130,7 +133,8 @@ class RuntimeEMStress(unittest.TestCase, OpTestEM):
             for core in range(1, num_avail_cores + 1):
                 cmd_list.append("ppc64_cpu --cores-on=%s" % core)
         num = 4
-        thread = OpSSHThreadLinearVar1(num, "Thread-%s" % num, cmd_list, 5, torture_time, True)
+        thread = OpSSHThread(num, "Thread-%s" % num, cmd_list=cmd_list, sleep_time=5,
+                             execution_time=torture_time, ignore_fail=True)
         thread.start()
         self.thread_list.append(thread)
 
@@ -139,7 +143,8 @@ class RuntimeEMStress(unittest.TestCase, OpTestEM):
         torture_time = self.torture_time
         cmd_list = ['ppc64_cpu --frequency']
         num = 5
-        thread = OpSSHThreadLinearVar1(num, "Thread-%s" % num, cmd_list, 2, torture_time, True)
+        thread = OpSSHThread(num, "Thread-%s" % num, cmd_list=cmd_list, sleep_time=2,
+                             execution_time=torture_time, ignore_fail=True)
         thread.start()
         self.thread_list.append(thread)
 

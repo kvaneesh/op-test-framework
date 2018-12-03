@@ -33,79 +33,66 @@ import threading
 import pexpect
 
 import OpTestConfiguration
-from OpTestSystem import OpSystemState
-from OpTestConstants import OpTestConstants as BMC_CONST
 from Exceptions import CommandFailed
-from OpTestIPMI import IPMIConsoleState
 
 import logging
 import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
-class OpSSHThreadLinearVar1(threading.Thread):
+
+class OpSSHThread(threading.Thread):
     '''
-    Runs a list of commands in a loop with equal sleep times in linear order
+    Create a thread and run commands in it.
     '''
-    def __init__(self, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
+    def __init__(self, threadID, name, cmd_list=None, cmd_dict=None,
+                 sleep_time=None, execution_time, ignore_fail=False):
+
         threading.Thread.__init__(self)
         self.threadID = threadID
-        self.name = name
         self.cmd_list = cmd_list
+        self.cmd_dict = cmd_dict
         self.sleep_time = sleep_time
         self.execution_time = execution_time
         self.ignore_fail = ignore_fail
+        self.name = name
         conf = OpTestConfiguration.conf
         self.host = conf.host()
         self.c = self.host.get_new_ssh_connection(name)
 
     def run(self):
         log.debug("Starting %s" % self.name)
-        self.inband_child_thread(self.name, self.cmd_list, self.sleep_time, self.execution_time, self.ignore_fail)
-        log.debug("Exiting %s" % self.name)
+        if cmd_dict:
+            self.run_dict()
+        else:
+            self.run_list()
+        log.debug("Thread exiting after run for desired time")
 
-    def inband_child_thread(self, threadName, cmd_list, sleep_time, torture_time, ignore_fail):
-        execution_time = time.time() + 60*torture_time,
-        log.debug("Starting %s for new SSH thread %s" % (threadName, cmd_list))
+
+    def run_list(self):
+        '''
+        Runs a list of commands in a loop with equal sleep times in linear order
+        '''
+        execution_time = time.time() + 60 * self.execution_time,
+        log.debug("Starting %s for new SSH thread %s" % (threadName, self.cmd_list))
         while True:
-            for cmd in cmd_list:
-                if ignore_fail:
+            for cmd in self.cmd_list:
+                if self.ignore_fail:
                     try:
                         self.c.run_command(cmd)
                     except CommandFailed as cf:
                         pass
                 else:
                     self.c.run_command(cmd)
-                time.sleep(sleep_time)
+                time.sleep(self.sleep_time)
             if time.time() > execution_time:
                 break
-        log.debug("Thread exiting after run for desired time")
 
-class OpSSHThreadLinearVar2(threading.Thread):
-    '''
-    Runs a dictionary of command(command, sleep time) pairs with each having individual sleep times
-    '''
-    def __init__(self, threadID, name, cmd_dic, execution_time, ignore_fail=False):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.cmd_dic = cmd_dic
-        self.execution_time = execution_time
-        self.ignore_fail = ignore_fail
-        conf = OpTestConfiguration.conf
-        self.host = conf.host()
-        self.c = self.host.get_new_ssh_connection(name)
-
-    def run(self):
-        log.debug("Starting %s" % self.name)
-        self.inband_child_thread(self.name, self.cmd_dic, self.execution_time, self.ignore_fail)
-        log.debug("Exiting %s" % self.name)
-
-    def inband_child_thread(self, threadName, cmd_dic, torture_time, ignore_fail):
-        execution_time = time.time() + 60*torture_time,
-        log.debug("Starting %s for new SSH thread %s" % (threadName, cmd_dic))
+    def run_dict(self):
+        execution_time = time.time() + 60*self.execution_time,
+        log.debug("Starting %s for new SSH thread %s" % (threadName, self.cmd_dict))
         while True:
-            for cmd, tm in cmd_dic.iteritems():
-                if ignore_fail:
+            for cmd, tm in self.cmd_dict.iteritems():
+                if self.ignore_fail:
                     try:
                         self.c.run_command(cmd)
                     except CommandFailed as cf:
@@ -115,44 +102,3 @@ class OpSSHThreadLinearVar2(threading.Thread):
                 time.sleep(tm)
             if time.time() > execution_time:
                 break
-        log.debug("Thread exiting after run for desired time")
-
-class OpSSHThreadRandom(threading.Thread):
-    '''
-    Runs a random command from a list of commands in a loop with equal sleep times
-    '''
-    def __init__(self, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.cmd_list = cmd_list
-        self.sleep_time = sleep_time
-        self.execution_time = execution_time
-        self.ignore_fail = ignore_fail
-        conf = OpTestConfiguration.conf
-        self.host = conf.host()
-        self.c = self.host.get_new_ssh_connection(name)
-
-    def run(self):
-        log.debug("Starting %s" % self.name)
-        self.inband_child_thread(self.name, self.cmd_list, self.sleep_time, self.execution_time, self.ignore_fail)
-        log.debug("Exiting %s" % self.name)
-
-    def inband_child_thread(self, threadName, cmd_list, sleep_time, torture_time, ignore_fail):
-        execution_time = time.time() + 60*torture_time,
-        log.debug("Starting %s for new SSH thread %s" % (threadName, cmd_list))
-        while True:
-            cmd = random.choice(cmd_list)
-            if ignore_fail:
-                try:
-                    self.c.run_command(cmd)
-                except CommandFailed as cf:
-                    pass
-            else:
-                self.c.run_command(cmd)
-            if time.time() > execution_time:
-                break
-            time.sleep(sleep_time)
-        log.debug("Thread exiting after run for desired time")
-
-
